@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能组卷加例题</title>
+    <script src="https://cdn.tailwindcss.com/3.3.3"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px 0 rgba(31, 38, 135, 0.15);
+        }
+        .tab-active {
+            background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+            color: white;
+            box-shadow: 0 4px 6px rgba(22, 163, 74, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
+        <!-- 左侧对话助手 -->
+        <div class="w-full md:w-1/3 glassmorphism p-6 card-hover">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-3">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h2 class="text-2xl font-semibold">文本对话助手</h2>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg mb-4 h-64 overflow-y-auto">
+                <!-- 对话内容区域 -->
+                <div class="chat-message mb-4">
+                    <div class="flex items-start">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
+                            <i class="fas fa-robot text-sm"></i>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-lg max-w-xs">
+                            <p class="text-sm">您好！我是您的学习助手，有什么问题可以随时问我。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center">
+                <input type="text" placeholder="输入您的问题..." class="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button class="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 右侧例题区域 -->
+        <div class="w-full md:w-2/3 glassmorphism p-6 card-hover">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-3">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h2 class="text-2xl font-semibold">例题练习</h2>
+            </div>
+
+            <div id="question-container" class="space-y-6">
+                <!-- 题目将通过JavaScript动态加载 -->
+            </div>
+
+            <!-- 分页控件 -->
+            <div class="flex justify-center mt-8">
+                <nav class="inline-flex rounded-md shadow-sm">
+                    <button id="prev-page" class="pagination-btn px-4 py-2 rounded-l-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-chevron-left"></i> 上一页
+                    </button>
+                    <button class="pagination-btn px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-700 hover:bg-gray-50 page-number" data-page="1">1</button>
+                    <button class="pagination-btn px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-700 hover:bg-gray-50 page-number" data-page="2">2</button>
+                    <button class="pagination-btn px-4 py-2 border-t border-b border-gray-300 bg-white text-gray-700 hover:bg-gray-50 page-number" data-page="3">3</button>
+                    <button id="next-page" class="pagination-btn px-4 py-2 rounded-r-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                        下一页 <i class="fas fa-chevron-right"></i>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center text-gray-500 text-sm mt-12">
+        <p>页面内容均由 AI 生成，仅供参考</p>
+        <p>created by <a href="https://space.coze.cn" class="text-green-600 hover:underline">coze space</a></p>
+    </footer>
+
+    <script>
+        // 题目数据 - 每页5道题
+        const questionsData = {
+            page1: [
+                {
+                    id: 1,
+                    question: "1. 下列哪个选项是正确的？",
+                    options: [
+                        "选项A",
+                        "选项B",
+                        "选项C",
+                        "选项D"
+                    ],
+                    answer: 0,
+                    explanation: "这是第一道题的解析说明。"
+                },
+                {
+                    id: 2,
+                    question: "2. 关于这个问题，以下说法正确的是？",
+                    options: [
+                        "说法A",
+                        "说法B",
+                        "说法C",
+                        "说法D"
+                    ],
+                    answer: 1,
+                    explanation: "这是第二道题的解析说明。"
+                },
+                {
+                    id: 3,
+                    question: "3. 下列哪个选项是错误的？",
+                    options: [
+                        "错误选项A",
+                        "错误选项B",
+                        "错误选项C",
+                        "错误选项D"
+                    ],
+                    answer: 2,
+                    explanation: "这是第三道题的解析说明。"
+                },
+                {
+                    id: 4,
+                    question: "4. 关于这个知识点，以下描述不正确的是？",
+                    options: [
+                        "描述A",
+                        "描述B",
+                        "描述C",
+                        "描述D"
+                    ],
+                    answer: 3,
+                    explanation: "这是第四道题的解析说明。"
+                },
+                {
+                    id: 5,
+                    question: "5. 下列哪个选项最符合题意？",
+                    options: [
+                        "符合A",
+                        "符合B",
+                        "符合C",
+                        "符合D"
+                    ],
+                    answer: 0,
+                    explanation: "这是第五道题的解析说明。"
+                }
+            ],
+            page2: [
+                {
+                    id: 6,
+                    question: "6. 关于这个理论，以下说法正确的是？",
+                    options: [
+                        "理论A",
+                        "理论B",
+                        "理论C",
+                        "理论D"
+                    ],
+                    answer: 1,
+                    explanation: "这是第六道题的解析说明。"
+                },
+                {
+                    id: 7,
+                    question: "7. 下列哪个选项是错误的？",
+                    options: [
+                        "错误A",
+                        "错误B",
+                        "错误C",
+                        "错误D"
+                    ],
+                    answer: 2,
+                    explanation: "这是第七道题的解析说明。"
+                },
+                {
+                    id: 8,
+                    question: "8. 关于这个问题，以下描述正确的是？",
+                    options: [
+                        "描述A",
+                        "描述B",
+                        "描述C",
+                        "描述D"
+                    ],
+                    answer: 3,
+                    explanation: "这是第八道题的解析说明。"
+                },
+                {
+                    id: 9,
+                    question: "9. 下列哪个选项最不符合题意？",
+                    options: [
+                        "不符合A",
+                        "不符合B",
+                        "不符合C",
+                        "不符合D"
+                    ],
+                    answer: 0,
+                    explanation: "这是第九道题的解析说明。"
+                },
+                {
+                    id: 10,
+                    question: "10. 关于这个知识点，以下说法不正确的是？",
+                    options: [
+                        "说法A",
+                        "说法B",
+                        "说法C",
+                        "说法D"
+                    ],
+                    answer: 1,
+                    explanation: "这是第十道题的解析说明。"
+                }
+            ],
+            page3: [
+                {
+                    id: 11,
+                    question: "11. 下列哪个选项是正确的？",
+                    options: [
+                        "正确A",
+                        "正确B",
+                        "正确C",
+                        "正确D"
+                    ],
+                    answer: 2,
+                    explanation: "这是第十一道题的解析说明。"
+                },
+                {
+                    id: 12,
+                    question: "12. 关于这个问题，以下说法错误的是？",
+                    options: [
+                        "错误A",
+                        "错误B",
+                        "错误C",
+                        "错误D"
+                    ],
+                    answer: 3,
+                    explanation: "这是第十二道题的解析说明。"
+                },
+                {
+                    id: 13,
+                    question: "13. 下列哪个选项最符合题意？",
+                    options: [
+                        "符合A",
+                        "符合B",
+                        "符合C",
+                        "符合D"
+                    ],
+                    answer: 0,
+                    explanation: "这是第十三道题的解析说明。"
+                },
+                {
+                    id: 14,
+                    question: "14. 关于这个理论，以下描述不正确的是？",
+                    options: [
+                        "描述A",
+                        "描述B",
+                        "描述C",
+                        "描述D"
+                    ],
+                    answer: 1,
+                    explanation: "这是第十四道题的解析说明。"
+                },
+                {
+                    id: 15,
+                    question: "15. 下列哪个选项是错误的？",
+                    options: [
+                        "错误A",
+                        "错误B",
+                        "错误C",
+                        "错误D"
+                    ],
+                    answer: 2,
+                    explanation: "这是第十五道题的解析说明。"
+                }
+            ]
+        };
+
+        // 当前页码
+        let currentPage = 1;
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载第一页题目
+            loadQuestions(currentPage);
+
+            // 分页按钮事件
+            document.getElementById('prev-page').addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    loadQuestions(currentPage);
+                    updatePaginationUI();
+                }
+            });
+
+            document.getElementById('next-page').addEventListener('click', function() {
+                if (currentPage < 3) {
+                    currentPage++;
+                    loadQuestions(currentPage);
+                    updatePaginationUI();
+                }
+            });
+
+            // 页码按钮事件
+            document.querySelectorAll('.page-number').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentPage = parseInt(this.dataset.page);
+                    loadQuestions(currentPage);
+                    updatePaginationUI();
+                });
+            });
+
+            // 检查答案按钮
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('check-answer-btn')) {
+                    const questionId = e.target.dataset.questionId;
+                    const selectedOption = document.querySelector(`input[name="q${questionId}"]:checked`);
+                    const explanationElement = document.getElementById(`explanation-${questionId}`);
+                    
+                    if (selectedOption) {
+                        const questionData = questionsData[`page${currentPage}`].find(q => q.id == questionId);
+                        if (selectedOption.value == questionData.answer) {
+                            explanationElement.innerHTML = `<div class="bg-green-50 text-green-700 p-3 rounded-lg mt-2"><i class="fas fa-check-circle mr-2"></i>回答正确！${questionData.explanation}</div>`;
+                        } else {
+                            explanationElement.innerHTML = `<div class="bg-red-50 text-red-700 p-3 rounded-lg mt-2"><i class="fas fa-times-circle mr-2"></i>回答错误！正确答案是: ${String.fromCharCode(65 + questionData.answer)}。${questionData.explanation}</div>`;
+                        }
+                    } else {
+                        alert('请先选择一个答案');
+                    }
+                }
+            });
+        });
+
+        // 加载题目函数
+        function loadQuestions(page) {
+            const container = document.getElementById('question-container');
+            container.innerHTML = '';
+            
+            const questions = questionsData[`page${page}`];
+            
+            questions.forEach((q, index) => {
+                const questionElement = document.createElement('div');
+                questionElement.className = 'bg-white p-6 rounded-lg shadow-sm';
+                questionElement.innerHTML = `
+                    <p class="font-medium text-gray-800 mb-4">${q.question}</p>
+                    <div class="space-y-3 ml-4">
+                        ${q.options.map((option, i) => `
+                            <div class="flex items-center">
+                                <input type="radio" name="q${q.id}" id="q${q.id}-${i}" value="${i}" class="mr-3">
+                                <label for="q${q.id}-${i}" class="text-gray-700">${String.fromCharCode(65 + i)}. ${option}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div id="explanation-${q.id}" class="mt-3"></div>
+                    <div class="mt-4 flex justify-end">
+                        <button class="check-answer-btn px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition" data-question-id="${q.id}">
+                            <i class="fas fa-check-circle mr-2"></i>检查答案
+                        </button>
+                    </div>
+                `;
+                container.appendChild(questionElement);
+            });
+        }
+
+        // 更新分页UI
+        function updatePaginationUI() {
+            document.querySelectorAll('.page-number').forEach(btn => {
+                if (parseInt(btn.dataset.page) === currentPage) {
+                    btn.classList.add('bg-green-100', 'text-green-700');
+                    btn.classList.remove('bg-white', 'text-gray-700');
+                } else {
+                    btn.classList.remove('bg-green-100', 'text-green-700');
+                    btn.classList.add('bg-white', 'text-gray-700');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
